@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!-- ==================== Seed Books ==================== -->
+    <changeSet id="5" author="bookstore" context="seed">
+        <insert tableName="books">
+            <column name="name" value="The Shining"/>
+            <column name="isbn" value="978-0385121675"/>
+            <column name="date_created" valueDate="now()"/>
+            <column name="publication_house" value="Doubleday"/>
+            <column name="category" value="HORROR"/>
+            <column name="price" value="12.99"/>
+            <column name="stock_quantity" value="50"/>
+        </insert>
+        <insert tableName="books">
+            <column name="name" value="Dune"/>
+            <column name="isbn" value="978-0441013593"/>
+            <column name="date_created" valueDate="now()"/>
+            <column name="publication_house" value="Ace Books"/>
+            <column name="category" value="SCIENCE_FICTION"/>
+            <column name="price" value="15.99"/>
+            <column name="stock_quantity" value="100"/>
+        </insert>
+        <insert tableName="books">
+            <column name="name" value="The Hobbit"/>
+            <column name="isbn" value="978-0547928227"/>
+            <column name="date_created" valueDate="now()"/>
+            <column name="publication_house" value="Houghton Mifflin Harcourt"/>
+            <column name="category" value="FANTASY"/>
+            <column name="price" value="14.99"/>
+            <column name="stock_quantity" value="75"/>
+        </insert>
+        <insert tableName="books">
+            <column name="name" value="Murder on the Orient Express"/>
+            <column name="isbn" value="978-0062693662"/>
+            <column name="date_created" valueDate="now()"/>
+            <column name="publication_house" value="William Morrow Paperbacks"/>
+            <column name="category" value="MYSTERY"/>
+            <column name="price" value="11.99"/>
+            <column name="stock_quantity" value="60"/>
+        </insert>
+        <insert tableName="books">
+            <column name="name" value="A Brief History of Time"/>
+            <column name="isbn" value="978-0553380163"/>
+            <column name="date_created" valueDate="now()"/>
+            <column name="publication_house" value="Bantam"/>
+            <column name="category" value="SCIENCE"/>
+            <column name="price" value="18.99"/>
+            <column name="stock_quantity" value="40"/>
+        </insert>
+    </changeSet>
+
+    <!-- ==================== Seed Customers ==================== -->
+    <changeSet id="6" author="bookstore" context="seed">
+        <insert tableName="customers">
+            <column name="first_name" value="John"/>
+            <column name="last_name" value="Doe"/>
+            <column name="email" value="john.doe@example.com"/>
+            <column name="mobile_phone" value="+1-555-0101"/>
+            <column name="address" value="123 Main Street, New York, NY 10001"/>
+        </insert>
+        <insert tableName="customers">
+            <column name="first_name" value="Jane"/>
+            <column name="last_name" value="Smith"/>
+            <column name="email" value="jane.smith@example.com"/>
+            <column name="mobile_phone" value="+1-555-0102"/>
+            <column name="address" value="456 Oak Avenue, Los Angeles, CA 90001"/>
+        </insert>
+        <insert tableName="customers">
+            <column name="first_name" value="Bob"/>
+            <column name="last_name" value="Johnson"/>
+            <column name="email" value="bob.johnson@example.com"/>
+            <column name="mobile_phone" value="+44-20-7946-0958"/>
+            <column name="address" value="789 Baker Street, London, UK"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

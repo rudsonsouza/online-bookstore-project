@@ -1,0 +1,35 @@
+# WildFly CLI configuration script
+# Configures datasource, JMS queues, and system properties
+
+embed-server --std-out=echo --server-config=standalone-full.xml
+
+# ==================== PostgreSQL JDBC Driver ====================
+/subsystem=datasources/jdbc-driver=postgresql:add( \
+    driver-name=postgresql, \
+    driver-module-name=org.postgresql, \
+    driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource \
+)
+
+# ==================== Datasource ====================
+data-source add \
+    --name=BookstoreDS \
+    --jndi-name=java:jboss/datasources/BookstoreDS \
+    --driver-name=postgresql \
+    --connection-url=jdbc:postgresql://${env.DB_HOST:postgres}:${env.DB_PORT:5432}/${env.DB_NAME:bookstore} \
+    --user-name=${env.DB_USER:bookstore} \
+    --password=${env.DB_PASSWORD:bookstore} \
+    --min-pool-size=5 \
+    --max-pool-size=20 \
+    --valid-connection-checker-class-name=org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLValidConnectionChecker \
+    --exception-sorter-class-name=org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLExceptionSorter
+
+# ==================== JMS Queue for Warehouse Notifications ====================
+jms-queue add \
+    --queue-address=WarehouseQueue \
+    --entries=[java:/jms/queue/WarehouseQueue]
+
+# ==================== System Properties for Redis ====================
+/system-property=redis.host:add(value=${env.REDIS_HOST:redis})
+/system-property=redis.port:add(value=${env.REDIS_PORT:6379})
+
+stop-embedded-server
