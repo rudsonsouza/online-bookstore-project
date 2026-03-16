@@ -37,10 +37,26 @@ public class BookRepository {
                 .getResultList();
     }
 
+    public List<Book> findAll(int page, int size) {
+        return em.createQuery("SELECT b FROM Book b ORDER BY b.name", Book.class)
+                .setFirstResult(page * size)
+                .setMaxResults(size)
+                .getResultList();
+    }
+
     public List<Book> findByCategory(BookCategory category) {
         TypedQuery<Book> query = em.createQuery(
                 "SELECT b FROM Book b WHERE b.category = :category ORDER BY b.name", Book.class);
         query.setParameter("category", category);
+        return query.getResultList();
+    }
+
+    public List<Book> findByCategory(BookCategory category, int page, int size) {
+        TypedQuery<Book> query = em.createQuery(
+                "SELECT b FROM Book b WHERE b.category = :category ORDER BY b.name", Book.class);
+        query.setParameter("category", category);
+        query.setFirstResult(page * size);
+        query.setMaxResults(size);
         return query.getResultList();
     }
 

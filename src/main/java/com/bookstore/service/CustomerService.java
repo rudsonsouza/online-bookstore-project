@@ -45,6 +45,10 @@ public class CustomerService {
         return customerRepository.findAll();
     }
 
+    public List<Customer> getAllCustomers(int page, int size) {
+        return customerRepository.findAll(page, size);
+    }
+
     public Customer updateCustomer(Long id, Customer customerData) {
         Customer existing = customerRepository.findById(id);
         if (existing == null) {

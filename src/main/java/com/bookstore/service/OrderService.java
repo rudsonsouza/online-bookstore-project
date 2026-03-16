@@ -16,6 +16,8 @@ import com.bookstore.jms.OrderMessageProducer;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -23,7 +25,7 @@ import java.util.logging.Logger;
 public class OrderService {
 
     private static final Logger LOGGER = Logger.getLogger(OrderService.class.getName());
-    private static final double VAT_RATE = 0.20; // 20% VAT
+    private static final BigDecimal VAT_RATE = new BigDecimal("0.20"); // 20% VAT
 
     @EJB
     private OrderRepository orderRepository;
@@ -63,7 +65,7 @@ public class OrderService {
         order.setPaymentMethod(paymentMethod);
         order.setOrderStatus(OrderStatus.PENDING);
 
-        double totalPrice = 0;
+        BigDecimal totalPrice = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getItems()) {
             Book book = bookRepository.findById(cartItem.getBookId());
             if (book == null) {
@@ -76,7 +78,9 @@ public class OrderService {
 
             OrderItem orderItem = new OrderItem(book, cartItem.getQuantity(), book.getPrice());
             order.addItem(orderItem);
-            totalPrice += orderItem.getSubtotal();
+            BigDecimal subtotal = BigDecimal.valueOf(book.getPrice())
+                    .multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+            totalPrice = totalPrice.add(subtotal);
 
             // Reduce stock
             book.setStockQuantity(book.getStockQuantity() - cartItem.getQuantity());
@@ -89,9 +93,9 @@ public class OrderService {
             }
         }
 
-        double priceWithoutVat = totalPrice / (1 + VAT_RATE);
-        order.setTotalPrice(Math.round(totalPrice * 100.0) / 100.0);
-        order.setPriceWithoutVat(Math.round(priceWithoutVat * 100.0) / 100.0);
+        BigDecimal priceWithoutVat = totalPrice.divide(BigDecimal.ONE.add(VAT_RATE), 2, RoundingMode.HALF_UP);
+        order.setTotalPrice(totalPrice.setScale(2, RoundingMode.HALF_UP).doubleValue());
+        order.setPriceWithoutVat(priceWithoutVat.doubleValue());
 
         Order savedOrder = orderRepository.create(order);
 
@@ -117,12 +121,24 @@ public class OrderService {
         return orderRepository.findAll();
     }
 
+    public List<Order> getAllOrders(int page, int size) {
+        return orderRepository.findAll(page, size);
+    }
+
     public List<Order> getOrdersByCustomerId(Long customerId) {
         return orderRepository.findByCustomerId(customerId);
     }
 
+    public List<Order> getOrdersByCustomerId(Long customerId, int page, int size) {
+        return orderRepository.findByCustomerId(customerId, page, size);
+    }
+
     public List<Order> getOrdersByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
+    }
+
+    public List<Order> getOrdersByStatus(OrderStatus status, int page, int size) {
+        return orderRepository.findByStatus(status, page, size);
     }
 
     /**

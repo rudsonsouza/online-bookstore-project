@@ -47,8 +47,16 @@ public class BookService {
         return bookRepository.findAll();
     }
 
+    public List<Book> getAllBooks(int page, int size) {
+        return bookRepository.findAll(page, size);
+    }
+
     public List<Book> getBooksByCategory(BookCategory category) {
         return bookRepository.findByCategory(category);
+    }
+
+    public List<Book> getBooksByCategory(BookCategory category, int page, int size) {
+        return bookRepository.findByCategory(category, page, size);
     }
 
     public Book updateBook(Long id, Book bookData) {

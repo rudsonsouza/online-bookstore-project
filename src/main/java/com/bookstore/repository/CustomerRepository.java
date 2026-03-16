@@ -36,6 +36,13 @@ public class CustomerRepository {
                 .getResultList();
     }
 
+    public List<Customer> findAll(int page, int size) {
+        return em.createQuery("SELECT c FROM Customer c ORDER BY c.lastName, c.firstName", Customer.class)
+                .setFirstResult(page * size)
+                .setMaxResults(size)
+                .getResultList();
+    }
+
     public Customer update(Customer customer) {
         return em.merge(customer);
     }

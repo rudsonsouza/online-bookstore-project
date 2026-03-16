@@ -1,15 +1,11 @@
 package com.bookstore.service;
 
 import com.bookstore.model.Cart;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,6 +23,8 @@ public class RedisCartStore {
     private static final Logger LOGGER = Logger.getLogger(RedisCartStore.class.getName());
     private static final String CART_KEY_PREFIX = "cart:";
     private static final int CART_TTL_SECONDS = 86400; // 24 hours
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private JedisPool jedisPool;
 
@@ -89,18 +87,11 @@ public class RedisCartStore {
     }
 
     private String serialize(Cart cart) throws Exception {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(cart);
-        oos.close();
-        return Base64.getEncoder().encodeToString(baos.toByteArray());
+        return OBJECT_MAPPER.writeValueAsString(cart);
     }
 
     private Cart deserialize(String data) throws Exception {
-        byte[] bytes = Base64.getDecoder().decode(data);
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        ObjectInputStream ois = new ObjectInputStream(bais);
-        return (Cart) ois.readObject();
+        return OBJECT_MAPPER.readValue(data, Cart.class);
     }
 
     /**
