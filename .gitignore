@@ -7,3 +7,6 @@ target/
 .settings/
 .project
 .classpath
+
+# Environment — contains secrets, never commit
+.env

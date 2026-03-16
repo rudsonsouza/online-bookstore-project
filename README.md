@@ -1,243 +1,271 @@
-# Online Bookstore - Java EE Backend
+# Online Bookstore — Java EE Backend
 
-A robust backend system for managing books, customers, shopping carts, and orders through secure RESTful APIs. Built with Java EE technologies deployed on WildFly Application Server.
+REST API para gerenciamento de livros, clientes, carrinhos e pedidos. Construído com Java EE 8, WildFly 26, PostgreSQL e Redis, totalmente containerizado com Docker Compose.
 
-## Architecture
+---
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    Docker Compose                            │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │   WildFly    │  │  PostgreSQL  │  │    Redis     │       │
-│  │  (App Server)│──│  (Database)  │  │   (Cache)    │       │
-│  │  Port: 8080  │  │  Port: 5432  │  │  Port: 6379  │       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
-└──────────────────────────────────────────────────────────────┘
-```
+## Sumário
 
-## Technology Stack
+1. [Pré-requisitos](#pré-requisitos)
+2. [Configuração do ambiente](#configuração-do-ambiente)
+3. [Build](#build)
+4. [Executando o projeto](#executando-o-projeto)
+5. [Verificando se está funcionando](#verificando-se-está-funcionando)
+6. [API Reference](#api-reference)
+7. [Exemplos de requisições](#exemplos-de-requisições)
+8. [Testes](#testes)
+9. [Arquitetura](#arquitetura)
+10. [Estrutura de pastas](#estrutura-de-pastas)
+11. [Troubleshooting](#troubleshooting)
 
-| Component                        | Technology                                              |
-|----------------------------------|---------------------------------------------------------|
-| REST APIs                        | JAX-RS                                                  |
-| Business Logic Layer             | EJBs / CDI                                              |
-| Persistence Layer                | JPA (Hibernate)                                         |
-| Asynchronous Messaging           | JMS (order confirmations, inventory updates, email)     |
-| Database                         | PostgreSQL                                              |
-| Schema Management & Seed Data    | Liquibase                                               |
-| Cache                            | Redis (temporary cart storage)                          |
-| Application Server               | WildFly 26                                              |
-| Java Version                     | Java 8+                                                 |
-| Containerization                 | Docker / Docker Compose                                 |
-| Testing                          | JUnit 5, Mockito                                        |
-| Build Tool                       | Maven                                                   |
+---
 
-## Project Structure
+## Pré-requisitos
 
-```
-online-bookstore/
-├── pom.xml                          # Maven build configuration
-├── Dockerfile                       # WildFly application image
-├── docker-compose.yml               # Multi-container orchestration
-├── docker/
-│   └── wildfly/
-│       ├── configure-wildfly.cli    # WildFly CLI: datasource, JMS, Redis config
-│       ├── postgresql-42.6.0.jar    # PostgreSQL JDBC driver (download required)
-│       └── modules/org/postgresql/main/
-│           └── module.xml           # WildFly module definition
-├── src/
-│   ├── main/
-│   │   ├── java/com/bookstore/
-│   │   │   ├── config/             # JAX-RS Application config
-│   │   │   ├── model/              # JPA Entities & POJOs
-│   │   │   │   ├── Book.java
-│   │   │   │   ├── BookCategory.java
-│   │   │   │   ├── Customer.java
-│   │   │   │   ├── Order.java
-│   │   │   │   ├── OrderItem.java
-│   │   │   │   ├── OrderStatus.java
-│   │   │   │   ├── PaymentMethod.java
-│   │   │   │   ├── Cart.java       # Redis-stored (not JPA entity)
-│   │   │   │   └── CartItem.java   # Redis-stored (not JPA entity)
-│   │   │   ├── repository/         # Data Access Layer (EJB DAOs)
-│   │   │   │   ├── BookRepository.java
-│   │   │   │   ├── CustomerRepository.java
-│   │   │   │   └── OrderRepository.java
-│   │   │   ├── service/            # Business Logic (EJB/CDI Services)
-│   │   │   │   ├── BookService.java
-│   │   │   │   ├── CustomerService.java
-│   │   │   │   ├── CartService.java
-│   │   │   │   ├── OrderService.java
-│   │   │   │   ├── RedisCartStore.java
-│   │   │   │   └── EmailNotificationService.java
-│   │   │   ├── jms/                # JMS Messaging
-│   │   │   │   ├── OrderMessageProducer.java
-│   │   │   │   └── WarehouseMessageListener.java
-│   │   │   └── rest/               # JAX-RS REST Endpoints
-│   │   │       ├── BookResource.java
-│   │   │       ├── CustomerResource.java
-│   │   │       ├── CartResource.java
-│   │   │       ├── OrderResource.java
-│   │   │       └── dto/
-│   │   │           ├── CreateOrderRequest.java
-│   │   │           ├── UpdateOrderStatusRequest.java
-│   │   │           └── AddToCartRequest.java
-│   │   ├── resources/
-│   │   │   ├── META-INF/
-│   │   │   │   └── persistence.xml  # JPA persistence unit config
-│   │   │   └── db/changelog/        # Liquibase migrations
-│   │   │       ├── db.changelog-master.xml
-│   │   │       ├── 001-create-tables.xml
-│   │   │       └── 002-seed-data.xml
-│   │   └── webapp/WEB-INF/
-│   │       └── beans.xml            # CDI configuration
-│   └── test/
-│       └── java/com/bookstore/
-│           ├── model/               # Entity unit tests
-│           ├── service/             # Service unit tests (Mockito)
-│           └── rest/                # REST endpoint unit tests (Mockito)
-└── README.md
-```
+Instale as ferramentas abaixo antes de prosseguir:
 
-## Core Features
+| Ferramenta | Versão mínima | Verificar |
+|---|---|---|
+| Java JDK | 8 | `java -version` |
+| Maven | 3.6 | `mvn -version` |
+| Docker | 20 | `docker -version` |
+| Docker Compose | 2 | `docker compose version` |
+| curl (opcional) | qualquer | `curl --version` |
 
-### 1. Books Management
-- CRUD operations for books
-- Properties: Name, ISBN, Date Created, Publication House, Category, Price, Stock Quantity
-- Filter by category
+---
 
-### 2. Customers Management
-- CRUD operations for customers
-- Properties: First Name, Last Name, Email, Mobile Phone, Address
-- Lookup by email
+## Configuração do ambiente
 
-### 3. Carts Management (Redis-cached)
-- Carts are **not** persisted in the database
-- Stored in Redis cache with a 24-hour TTL
-- Add/remove items, view cart, clear cart
+O projeto usa variáveis de ambiente para credenciais. **Nunca edite as credenciais diretamente no código.**
 
-### 4. Orders Management
-- Create orders from a customer's cart
-- Order includes: books, delivery address, total price, price without VAT (20%), payment method, status
-- Update order status (PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED)
-- Email notifications on status changes (stub logger implementation)
-- JMS warehouse notifications when book stock is depleted
-
-## REST API Endpoints
-
-### Books API (`/api/books`)
-
-| Method | Path                | Description              |
-|--------|---------------------|--------------------------|
-| POST   | `/api/books`        | Create a new book        |
-| GET    | `/api/books`        | List all books           |
-| GET    | `/api/books?category=HORROR` | Filter by category |
-| GET    | `/api/books/{id}`   | Get book by ID           |
-| GET    | `/api/books/isbn/{isbn}` | Get book by ISBN    |
-| PUT    | `/api/books/{id}`   | Update a book            |
-| DELETE | `/api/books/{id}`   | Delete a book            |
-
-### Customers API (`/api/customers`)
-
-| Method | Path                          | Description              |
-|--------|-------------------------------|--------------------------|
-| POST   | `/api/customers`              | Create a new customer    |
-| GET    | `/api/customers`              | List all customers       |
-| GET    | `/api/customers/{id}`         | Get customer by ID       |
-| GET    | `/api/customers/email/{email}`| Get customer by email    |
-| PUT    | `/api/customers/{id}`         | Update a customer        |
-| DELETE | `/api/customers/{id}`         | Delete a customer        |
-
-### Carts API (`/api/carts`)
-
-| Method | Path                                    | Description              |
-|--------|-----------------------------------------|--------------------------|
-| GET    | `/api/carts/{customerId}`               | Get customer's cart      |
-| POST   | `/api/carts/{customerId}/items`         | Add item to cart         |
-| DELETE | `/api/carts/{customerId}/items/{bookId}`| Remove item from cart    |
-| DELETE | `/api/carts/{customerId}`               | Clear entire cart        |
-
-### Orders API (`/api/orders`)
-
-| Method | Path                        | Description                   |
-|--------|-----------------------------|-------------------------------|
-| POST   | `/api/orders`               | Create order from cart        |
-| GET    | `/api/orders`               | List all orders               |
-| GET    | `/api/orders?customerId=1`  | Filter by customer            |
-| GET    | `/api/orders?status=PENDING`| Filter by status              |
-| GET    | `/api/orders/{id}`          | Get order by ID               |
-| PUT    | `/api/orders/{id}/status`   | Update order status           |
-
-## Prerequisites
-
-- **Java 8** or higher
-- **Maven 3.6+**
-- **Docker** and **Docker Compose** (for containerized deployment)
-
-## Build & Test
-
-### Build the project
 ```bash
-mvn clean package
+# 1. Copie o arquivo de exemplo
+cp .env.example .env
+
+# 2. Edite .env se quiser senhas diferentes (opcional para desenvolvimento local)
+#    Por padrão já está configurado para funcionar com docker-compose
 ```
 
-### Run unit tests only
-```bash
-mvn test
-```
+O arquivo `.env` nunca é commitado (está no `.gitignore`).
 
-The project includes **126 unit tests** covering:
-- Model entity tests (Book, Customer, Cart, Order)
-- Service layer tests with Mockito mocks (BookService, CustomerService, CartService, OrderService, EmailNotificationService)
-- REST endpoint tests with Mockito mocks (BookResource, CustomerResource, CartResource, OrderResource)
+---
 
-## Docker Deployment
+## Build
 
-### 1. Download PostgreSQL JDBC Driver
+### 1. Baixe o driver JDBC do PostgreSQL
 
-Before building the Docker image, download the PostgreSQL JDBC driver:
+O Dockerfile precisa do driver JDBC para montar o módulo do WildFly:
+
 ```bash
 curl -L -o docker/wildfly/postgresql-42.6.0.jar \
   https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
 ```
 
-### 2. Build the WAR file
+### 2. Compile o projeto e gere o WAR
+
 ```bash
 mvn clean package -DskipTests
 ```
 
-### 3. Start all services
+O arquivo gerado será `target/online-bookstore.war`.
+
+---
+
+## Executando o projeto
+
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-This starts:
-- **WildFly** on port `8080` (application) and `9990` (management)
-- **PostgreSQL** on port `5432`
-- **Redis** on port `6379`
+Isso sobe três containers em ordem:
 
-### 4. Access the API
-```
-http://localhost:8080/online-bookstore/api/books
-http://localhost:8080/online-bookstore/api/customers
-http://localhost:8080/online-bookstore/api/carts/{customerId}
-http://localhost:8080/online-bookstore/api/orders
-```
+| Container | Porta | Aguarda |
+|---|---|---|
+| `bookstore-postgres` | 5432 | healthcheck OK |
+| `bookstore-redis` | 6379 | healthcheck OK |
+| `bookstore-wildfly` | 8080 / 9990 | postgres + redis prontos |
 
-### Stop all services
+> O WildFly demora cerca de **30–60 segundos** para inicializar. Aguarde a mensagem `WildFly Full 26.1.3.Final (WildFly Core...) started` nos logs antes de fazer requisições.
+
+### Parar os serviços
+
 ```bash
-docker-compose down
+# Apenas para os containers (mantém dados)
+docker compose down
+
+# Para e remove volumes (apaga banco e cache)
+docker compose down -v
 ```
 
-### Stop and remove volumes
+---
+
+## Verificando se está funcionando
+
+### API de livros (retorna os livros do seed)
+
 ```bash
-docker-compose down -v
+curl http://localhost:8080/online-bookstore/api/books
 ```
 
-## Example API Requests
+Resposta esperada: array JSON com 5 livros (The Shining, Dune, The Hobbit, etc.)
 
-### Create a Book
+### OpenAPI — documentação interativa da API
+
+Acesse no navegador:
+
+```
+http://localhost:8080/openapi
+```
+
+Retorna o schema OpenAPI 3.0 em YAML. Pode ser importado no Postman, Insomnia ou qualquer cliente compatível.
+
+### Console de administração do WildFly (opcional)
+
+```
+http://localhost:9990
+```
+
+---
+
+## API Reference
+
+**Base URL:** `http://localhost:8080/online-bookstore/api`
+
+Todos os endpoints aceitam e retornam `application/json`. Erros retornam o formato:
+
+```json
+{
+  "status": 400,
+  "message": "Quantity must be at least 1",
+  "timestamp": "2026-03-16T10:00:00.000Z"
+}
+```
+
+### Parâmetros de paginação (endpoints de listagem)
+
+Todos os `GET` de coleção aceitam:
+
+| Parâmetro | Padrão | Descrição |
+|---|---|---|
+| `page` | `0` | Página (base 0) |
+| `size` | `20` | Itens por página |
+
+Exemplo: `GET /api/books?page=1&size=10`
+
+---
+
+### Books — `/api/books`
+
+| Método | Caminho | Descrição |
+|---|---|---|
+| `POST` | `/api/books` | Cria um livro |
+| `GET` | `/api/books` | Lista livros (paginado) |
+| `GET` | `/api/books?category=HORROR` | Filtra por categoria |
+| `GET` | `/api/books/{id}` | Busca por ID |
+| `GET` | `/api/books/isbn/{isbn}` | Busca por ISBN |
+| `PUT` | `/api/books/{id}` | Atualiza um livro |
+| `DELETE` | `/api/books/{id}` | Remove um livro |
+
+**Categorias disponíveis:** `HORROR`, `SCIENCE_FICTION`, `FANTASY`, `MYSTERY`, `ROMANCE`, `BIOGRAPHY`, `HISTORY`, `SCIENCE`, `TECHNOLOGY`, `OTHER`
+
+**Campos obrigatórios para criação:**
+
+```json
+{
+  "name": "string",
+  "isbn": "string",
+  "category": "HORROR",
+  "price": 12.99,
+  "stockQuantity": 50
+}
+```
+
+---
+
+### Customers — `/api/customers`
+
+| Método | Caminho | Descrição |
+|---|---|---|
+| `POST` | `/api/customers` | Cria um cliente |
+| `GET` | `/api/customers` | Lista clientes (paginado) |
+| `GET` | `/api/customers/{id}` | Busca por ID |
+| `GET` | `/api/customers/email/{email}` | Busca por e-mail |
+| `PUT` | `/api/customers/{id}` | Atualiza um cliente |
+| `DELETE` | `/api/customers/{id}` | Remove um cliente |
+
+**Campos obrigatórios para criação:**
+
+```json
+{
+  "firstName": "string",
+  "lastName": "string",
+  "email": "string"
+}
+```
+
+---
+
+### Cart — `/api/carts`
+
+Carrinhos são armazenados no **Redis** com TTL de 24 horas. Não são persistidos no banco.
+
+| Método | Caminho | Descrição |
+|---|---|---|
+| `GET` | `/api/carts/{customerId}` | Retorna o carrinho |
+| `POST` | `/api/carts/{customerId}/items` | Adiciona item |
+| `DELETE` | `/api/carts/{customerId}/items/{bookId}` | Remove item |
+| `DELETE` | `/api/carts/{customerId}` | Limpa o carrinho |
+
+**Body para adicionar item:**
+
+```json
+{
+  "bookId": 1,
+  "quantity": 2
+}
+```
+
+---
+
+### Orders — `/api/orders`
+
+| Método | Caminho | Descrição |
+|---|---|---|
+| `POST` | `/api/orders` | Cria pedido a partir do carrinho |
+| `GET` | `/api/orders` | Lista pedidos (paginado) |
+| `GET` | `/api/orders?customerId=1` | Filtra por cliente |
+| `GET` | `/api/orders?status=PENDING` | Filtra por status |
+| `GET` | `/api/orders/{id}` | Busca por ID |
+| `PUT` | `/api/orders/{id}/status` | Atualiza status |
+
+**Body para criar pedido:**
+
+```json
+{
+  "customerId": 1,
+  "deliveryAddress": "Rua das Flores, 100",
+  "paymentMethod": "CREDIT_CARD"
+}
+```
+
+**Status disponíveis:** `PENDING` → `CONFIRMED` → `PROCESSING` → `SHIPPED` → `DELIVERED` (ou `CANCELLED`)
+
+**Métodos de pagamento:** `CREDIT_CARD`, `DEBIT_CARD`, `BANK_TRANSFER`, `PAYPAL`
+
+---
+
+## Exemplos de requisições
+
+O fluxo abaixo usa os dados do **seed** (cliente ID=1, livro ID=1) para criar um pedido completo.
+
+### 1. Ver livros disponíveis
+
+```bash
+curl http://localhost:8080/online-bookstore/api/books
+```
+
+### 2. Criar um novo livro
+
 ```bash
 curl -X POST http://localhost:8080/online-bookstore/api/books \
   -H "Content-Type: application/json" \
@@ -251,7 +279,8 @@ curl -X POST http://localhost:8080/online-bookstore/api/books \
   }'
 ```
 
-### Create a Customer
+### 3. Criar um cliente
+
 ```bash
 curl -X POST http://localhost:8080/online-bookstore/api/customers \
   -H "Content-Type: application/json" \
@@ -259,51 +288,234 @@ curl -X POST http://localhost:8080/online-bookstore/api/customers \
     "firstName": "Alice",
     "lastName": "Wonder",
     "email": "alice@example.com",
-    "mobilePhone": "+1-555-0303",
-    "address": "789 Elm Street, Chicago, IL 60601"
+    "mobilePhone": "+55-11-99999-0000",
+    "address": "Av. Paulista, 1000, São Paulo"
   }'
 ```
 
-### Add Item to Cart
+### 4. Adicionar livro ao carrinho
+
 ```bash
 curl -X POST http://localhost:8080/online-bookstore/api/carts/1/items \
   -H "Content-Type: application/json" \
-  -d '{
-    "bookId": 1,
-    "quantity": 2
-  }'
+  -d '{"bookId": 1, "quantity": 2}'
 ```
 
-### Create an Order from Cart
+### 5. Ver o carrinho
+
+```bash
+curl http://localhost:8080/online-bookstore/api/carts/1
+```
+
+### 6. Criar pedido a partir do carrinho
+
 ```bash
 curl -X POST http://localhost:8080/online-bookstore/api/orders \
   -H "Content-Type: application/json" \
   -d '{
     "customerId": 1,
-    "deliveryAddress": "456 Oak Avenue, Boston, MA 02101",
+    "deliveryAddress": "Av. Paulista, 1000, São Paulo",
     "paymentMethod": "CREDIT_CARD"
   }'
 ```
 
-### Update Order Status
+### 7. Atualizar status do pedido
+
 ```bash
 curl -X PUT http://localhost:8080/online-bookstore/api/orders/1/status \
   -H "Content-Type: application/json" \
-  -d '{
-    "status": "SHIPPED"
-  }'
+  -d '{"status": "SHIPPED"}'
 ```
 
-## Design Decisions
+### 8. Listar pedidos com paginação
 
-1. **Cart Storage**: Carts are stored in Redis with a 24-hour TTL, not in the database, for performance and scalability.
-2. **VAT Calculation**: A 20% VAT rate is applied to order totals.
-3. **Email Notifications**: Implemented as a stub (logs only) since no SMTP server is required per requirements.
-4. **JMS Warehouse Notifications**: Sent via ActiveMQ Artemis (WildFly's built-in JMS provider) when book stock reaches zero.
-5. **Liquibase Migrations**: Schema and seed data are managed through versioned XML changelogs.
+```bash
+curl "http://localhost:8080/online-bookstore/api/orders?page=0&size=5"
+```
 
-## Seed Data
+---
 
-The Liquibase seed data includes:
-- **5 books**: The Shining, Dune, The Hobbit, Murder on the Orient Express, A Brief History of Time
-- **3 customers**: John Doe, Jane Smith, Bob Johnson
+## Testes
+
+### Rodar todos os testes
+
+```bash
+mvn test
+```
+
+### Build completo com testes
+
+```bash
+mvn clean verify
+```
+
+O projeto possui **126 testes unitários** (JUnit 5 + Mockito) cobrindo:
+- Entidades (`Book`, `Customer`, `Cart`, `Order`)
+- Serviços com mocks (`BookService`, `CustomerService`, `CartService`, `OrderService`)
+- Endpoints REST com mocks (`BookResource`, `CustomerResource`, `CartResource`, `OrderResource`)
+
+Os testes **não precisam** de Docker, banco de dados ou Redis para rodar.
+
+---
+
+## Arquitetura
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                      Docker Compose                       │
+│                                                           │
+│  ┌─────────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │    WildFly 26   │  │  PostgreSQL  │  │    Redis    │  │
+│  │   (JAX-RS API)  │──│  Port: 5432  │  │ Port: 6379  │  │
+│  │   Port: 8080    │  │  (Pedidos,   │  │  (Carrinhos │  │
+│  │   Port: 9990    │  │   Livros,    │  │   24h TTL)  │  │
+│  │   (management)  │  │   Clientes)  │  │             │  │
+│  └─────────────────┘  └──────────────┘  └─────────────┘  │
+└───────────────────────────────────────────────────────────┘
+```
+
+**Camadas da aplicação:**
+
+```
+HTTP Request
+    │
+    ▼
+REST Resource (JAX-RS)        ← validação @Valid, tratamento de erros centralizado
+    │
+    ▼
+Service (EJB/CDI)             ← regras de negócio, cálculo de VAT (BigDecimal)
+    │
+    ├──▶ Repository (EJB/JPA) ← acesso ao banco, consultas com paginação
+    │
+    ├──▶ RedisCartStore        ← carrinho serializado como JSON
+    │
+    └──▶ JMS Producer          ← notificação de estoque zerado (ActiveMQ Artemis)
+```
+
+**Stack tecnológica:**
+
+| Componente | Tecnologia |
+|---|---|
+| REST API | JAX-RS (RESTEasy) |
+| Business Logic | EJB Stateless + CDI |
+| Persistência | JPA + Hibernate 5.6 |
+| Banco de dados | PostgreSQL 15 |
+| Migrations | Liquibase 4.20 |
+| Cache (carrinho) | Redis 7 + Jedis 4.4 |
+| Mensageria | JMS + ActiveMQ Artemis (built-in WildFly) |
+| API Docs | MicroProfile OpenAPI (SmallRye) |
+| App Server | WildFly 26.1 |
+| Build | Maven 3 |
+| Testes | JUnit 5 + Mockito 5 |
+| CI/CD | GitHub Actions |
+
+---
+
+## Estrutura de pastas
+
+```
+online-bookstore-project/
+├── .env.example                          # Template de variáveis de ambiente
+├── .github/workflows/ci.yml             # Pipeline CI/CD (GitHub Actions)
+├── docker-compose.yml                   # Orquestração dos containers
+├── Dockerfile                           # Imagem WildFly customizada
+├── pom.xml                              # Dependências e build Maven
+├── docker/wildfly/
+│   ├── configure-wildfly.cli            # Datasource, JMS, Redis no WildFly
+│   ├── postgresql-42.6.0.jar            # Driver JDBC (baixar manualmente)
+│   └── modules/org/postgresql/main/
+│       └── module.xml                   # Módulo WildFly para PostgreSQL
+└── src/
+    ├── main/java/com/bookstore/
+    │   ├── config/
+    │   │   └── JaxRsApplication.java    # @ApplicationPath + @OpenAPIDefinition
+    │   ├── model/                       # Entidades JPA e POJOs Redis
+    │   ├── repository/                  # DAOs com suporte a paginação
+    │   ├── service/                     # Lógica de negócio (EJB/CDI)
+    │   ├── jms/                         # Produtor/consumidor JMS
+    │   └── rest/
+    │       ├── GlobalExceptionMapper.java  # Tratamento centralizado de erros
+    │       ├── BookResource.java
+    │       ├── CustomerResource.java
+    │       ├── CartResource.java
+    │       ├── OrderResource.java
+    │       └── dto/                     # Request/Response DTOs com validações
+    └── main/resources/db/changelog/
+        ├── 001-create-tables.xml        # Schema inicial
+        ├── 002-seed-data.xml            # Dados de exemplo
+        └── 003-add-indexes.xml          # Índices de performance
+```
+
+---
+
+## Troubleshooting
+
+### `docker compose up` falha com erro de driver JDBC
+
+O arquivo `docker/wildfly/postgresql-42.6.0.jar` não existe. Execute:
+
+```bash
+curl -L -o docker/wildfly/postgresql-42.6.0.jar \
+  https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
+```
+
+---
+
+### WildFly não sobe — erro de `.env`
+
+Certifique-se de que o arquivo `.env` existe na raiz do projeto:
+
+```bash
+cp .env.example .env
+```
+
+---
+
+### API retorna 404 para todos os endpoints
+
+O WildFly pode ainda não ter terminado o deploy. Aguarde a mensagem nos logs:
+
+```
+WildFly Full 26.1.3.Final ... started in ...ms
+```
+
+---
+
+### Porta 5432 ou 8080 já em uso
+
+Outro processo está usando a porta. Para verificar:
+
+```bash
+# Linux/macOS
+lsof -i :8080
+lsof -i :5432
+
+# Windows
+netstat -ano | findstr :8080
+netstat -ano | findstr :5432
+```
+
+Pare o processo conflitante ou altere as portas no `docker-compose.yml`.
+
+---
+
+### Erro de variável não definida ao rodar `mvn liquibase:update`
+
+O plugin Liquibase no `pom.xml` usa variáveis de ambiente. Defina-as antes de executar:
+
+```bash
+export DB_URL=jdbc:postgresql://localhost:5432/bookstore
+export DB_USER=bookstore
+export DB_PASSWORD=bookstore
+
+mvn liquibase:update
+```
+
+---
+
+### Limpar tudo e começar do zero
+
+```bash
+docker compose down -v   # remove containers + volumes
+docker compose up --build
+```
