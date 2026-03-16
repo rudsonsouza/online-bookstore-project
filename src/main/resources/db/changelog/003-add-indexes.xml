@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="7" author="bookstore">
+
+        <!-- books: category filtering (getBooksByCategory) -->
+        <createIndex tableName="books" indexName="idx_books_category">
+            <column name="category"/>
+        </createIndex>
+
+        <!-- books: name sorting (findAll ORDER BY name) -->
+        <createIndex tableName="books" indexName="idx_books_name">
+            <column name="name"/>
+        </createIndex>
+
+        <!-- orders: customer lookup (findByCustomerId) — PostgreSQL does NOT auto-index FKs -->
+        <createIndex tableName="orders" indexName="idx_orders_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+
+        <!-- orders: status filtering (findByStatus) -->
+        <createIndex tableName="orders" indexName="idx_orders_status">
+            <column name="order_status"/>
+        </createIndex>
+
+        <!-- orders: date sorting (ORDER BY date_created DESC) -->
+        <createIndex tableName="orders" indexName="idx_orders_date_created">
+            <column name="date_created"/>
+        </createIndex>
+
+        <!-- order_items: order lookup — FK not auto-indexed in PostgreSQL -->
+        <createIndex tableName="order_items" indexName="idx_order_items_order_id">
+            <column name="order_id"/>
+        </createIndex>
+
+        <!-- order_items: book lookup — FK not auto-indexed in PostgreSQL -->
+        <createIndex tableName="order_items" indexName="idx_order_items_book_id">
+            <column name="book_id"/>
+        </createIndex>
+
+        <!-- customers: last_name/first_name sorting (findAll ORDER BY) -->
+        <createIndex tableName="customers" indexName="idx_customers_last_name">
+            <column name="last_name"/>
+            <column name="first_name"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>
