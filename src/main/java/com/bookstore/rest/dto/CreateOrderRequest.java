@@ -2,6 +2,7 @@ package com.bookstore.rest.dto;
 
 import com.bookstore.model.PaymentMethod;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 /**
@@ -11,8 +12,12 @@ public class CreateOrderRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @NotNull(message = "Customer ID is required")
     private Long customerId;
+
     private String deliveryAddress;
+
+    @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 
     public CreateOrderRequest() {

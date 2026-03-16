@@ -2,6 +2,7 @@ package com.bookstore.rest.dto;
 
 import com.bookstore.model.OrderStatus;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 /**
@@ -11,6 +12,7 @@ public class UpdateOrderStatusRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @NotNull(message = "Order status is required")
     private OrderStatus status;
 
     public UpdateOrderStatusRequest() {
